@@ -39,7 +39,7 @@ form on this page, An endorsement code is a six character alphanumeric string (e
                     :size="'default'"
                     status-icon
                     >
-                    <el-form-item label="Code" prop="code">
+                    <el-form-item label="Account" prop="code">
                         <el-input v-model="ruleForm.code" size="large" class="step1-sty" placeholder="Please input account" />
                     </el-form-item>
                     <el-form-item label="password" prop="password">
@@ -115,10 +115,10 @@ const submitForm = async (formEl) => {
             endorsementCode: ruleForm.endorsementCode,
             cipherText: cipherText.value
         }).then((res) => {
-            if(res.code != 200){
+            if(res.code == 200){
                 ElMessage({
                 type: 'success',
-                message: res.message,
+                message: res.data,
             })
             }else{
                 ElMessage({

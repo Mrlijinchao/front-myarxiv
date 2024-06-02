@@ -6,7 +6,7 @@
                 这是第一个通知
             </div>
             <div class="content1">
-                通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！通知！！！
+                This coming Wednesday, May 22, 2024, the arXiv editorial staff will be attending a team development retreat. Because all editorial staff will be participating in this professional development, it will temporarily affect arXiv’s mailings, help desk, and announcement schedule. This brief change will only affect the announcement of new submissions; arXiv servers will otherwise remain…
             </div>
         </div>
     </div>
@@ -38,6 +38,7 @@
     border-radius: 6px;
     border: 3px solid black;
     padding: 20px;
+    text-align: left;
 }
 
 

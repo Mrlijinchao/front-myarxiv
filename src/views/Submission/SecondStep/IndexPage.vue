@@ -5,11 +5,11 @@
                 <div class="step-area">
                     <div class="step-button">
                         <div>
-                           <el-button type="primary" style="margin-top: 12px" @click="last" plain>Last step</el-button> 
+                           <el-button type="primary" style="margin-top: 40px" @click="last" plain>Last step</el-button> 
                         </div>
                     </div>
                     <div class="step-button">
-                        <el-button type="primary" style="margin-top: 12px" @click="next" plain>Next step</el-button>
+                        <el-button type="primary" style="margin-top: 40px" @click="next" plain>Next step</el-button>
                     </div>
                 </div>
                 <div class="title-area">
@@ -89,13 +89,6 @@
                     </div>
                 </template>
                 </el-upload>
-                <div v-show="progressFlag">
-                    <el-progress
-                    :text-inside="true"
-                    :stroke-width="14"
-                    :percentage="progressPercent"
-                ></el-progress>
-      </div>
             </div>
         </div>
     </div>
@@ -105,11 +98,13 @@
 import { useRouter } from 'vue-router'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { ref,onMounted } from 'vue'
-import { ElMessage} from 'element-plus'
+import { ElMessage,ElLoading} from 'element-plus'
 import { saveFiles } from '@/api/file/file'
 import { getFileBySubmission } from '@/api/paper/paper'
 import { useStore } from "vuex";
-import { downloadFile } from '@/api/file/file'
+import { downloadFile,updateFileInfo } from '@/api/file/file'
+import {queryCurrentUser} from '@/api/user/user'
+
 let store = useStore();
 const router = useRouter()
 
@@ -117,17 +112,18 @@ const fileList = ref([])
 
 const submissionId = ref(0)
 
-const progressPercent = ref(0)
-
-const progressFlag = ref(false)
 
 const existFileList = ref([])
 
+const userInfo = ref()
 
 onMounted(() => {
     submissionId.value = store.getters['submission/getSubmissionInfo'].id
     // 根据submissionId查询已经上传的文件
     queryExistFile()
+    queryCurrentUser().then((res) => {
+        userInfo.value = res.data;
+    })
 })
 
 // 文件状态改变时的钩子，添加文件、上传成功和上传失败时都会被调用,function(file, fileList)
@@ -149,18 +145,11 @@ function submitUpload() {
       return
     }
 
-
-    const config = {
-        onUploadProgress: (progressEvent) => {
-          // progressEvent.loaded:已上传文件大小
-          // progressEvent.total:被上传文件的总大小
-          progressPercent.value = Number(
-            ((progressEvent.loaded / progressEvent.total) * 90).toFixed(2)
-          );
-        },
-      };
-      progressFlag.value = true
-
+    const loading = ElLoading.service({
+        lock: true,
+        text: 'Loading',
+        background: 'rgba(0, 0, 0, 0.7)',
+    })
     // 下面的代码将创建一个空的FormData对象:
     const formData = new FormData()
     // 你可以使用FormData.append来添加键/值对到表单里面；
@@ -173,19 +162,51 @@ function submitUpload() {
     //     url: 'http://localhost:8099/file',
     //     data: formData
     // });
-    saveFiles(formData,config).then((res) => {
+    
+    saveFiles(formData).then((res) => {
         console.log(res)
+        loading.close();
 
-        progressPercent.value = 100;
-        progressFlag.value = false
 
-        localStorage.setItem('secondReturnInfo',JSON.stringify(res));
-        ElMessage({
-        type: 'success',
-        message: '文件已上传',
-      })
-      // 更新已上传文件列表
-      queryExistFile()
+        if(res.code == 200){
+
+            localStorage.setItem('secondReturnInfo',JSON.stringify(res));
+            ElMessage({
+                type: 'success',
+                message: '文件已上传',
+            })
+            // 更新已上传文件列表
+            queryExistFile()
+
+            let successData = res.data['successResData']
+
+            callSmartContract(successData)
+
+            // 上链文件信息
+            // for(let i = 0;successData.length;i++){
+            //     let fileData = successData[i]
+            //     console.log(fileData['md5Hash'])
+            //     let hash = fileData['md5Hash'] +"::"+ fileData['cid']
+
+            //     console.log(fileData['fileName'])
+            //     console.log(hash)
+
+            //     let str = callSmartContract(hash,fileData['fileName'],fileData['md5Hash'],fileData['cid'])
+
+            // }
+
+            // for await (file of successData){
+            //     let fileData = successData[i]
+            //     console.log(fileData['md5Hash'])
+            //     let hash = fileData['md5Hash'] +"::"+ fileData['cid']
+
+            //     console.log(fileData['fileName'])
+            //     console.log(hash)
+            //     callSmartContract(hash,fileData['fileName'],fileData['md5Hash'],fileData['cid'])
+            // }
+
+        }
+        
     })
 
     // 添加自定义参数，不传可删除
@@ -262,6 +283,132 @@ function last(){
         path:"/submission/first",
     })
 }
+
+
+
+
+import { ERC20contractInstance } from "@/blockchain/constant.js";
+
+async function connectWallet() {
+      try {
+        // 检查是否存在 window.ethereum 对象
+        if (!window.ethereum) {
+          alert("Please install the MetaMask plugin to continue the operation");
+          return;
+        }
+
+        // 尝试请求用户授权
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+
+        if (accounts.length === 0) {
+          alert("请连接到以太坊网络以继续操作");
+        } else {
+          // 用户已连接，可以执行其他操作或初始化
+          console.log("用户已连接，可以执行其他操作");
+        }
+      } catch (error) {
+        // 处理错误
+        console.error("连接钱包时出错:", error);
+      }
+    }
+
+async function callSmartContract(successData) {
+      try {
+        connectWallet()
+        // 调用智能合约函数
+        const functionName = "storeHash";
+        // this.userInfo.block_chain_address =
+        //   this.userInfo.block_chain_address.toLowerCase();
+
+        // if (
+        //   this.userInfo.block_chain_address !== window.ethereum.selectedAddress
+        // ) {
+        //   this.fileList = [];
+        //   this.$message({
+        //     message: "Please use the your account_address",
+        //     type: "warning",
+        //   });
+        //   return;
+        // }
+        console.log(window.ethereum.selectedAddress)
+        // const result = await ERC20contractInstance.methods[functionName](
+
+        for(let i = 0;successData.length;i++){
+                let fileData = successData[i]
+                let hash = userInfo.value.id+ "::" + fileData['md5Hash'] +"::"+ fileData['cid']
+
+                console.log(fileData['fileName'])
+                console.log(hash)
+
+                const functionArgs = [hash];
+
+                 await ERC20contractInstance.methods[functionName](
+          ...functionArgs
+        ).send({
+          from: window.ethereum.selectedAddress,
+          gasPrice: "0",
+        }).then(result => {
+
+        // 输出结果
+        console.log("Transaction result:", result);
+        // this.form.block_address = result.blockHash;
+        // this.form.paper_transaction_address = result.transactionHash;
+
+        ElMessage({
+                type: 'success',
+                message: '《'+fileData['fileName']+ '》' + '文件信息已上链',
+        })
+        console.log(result.transactionHash)
+        updateFileInfo({
+            md5Hash: fileData['md5Hash'],
+            cid: fileData['cid'],
+            transactionHash: result.transactionHash
+        }).then(res => {
+            console.log(res)
+        })
+
+        });
+
+            }
+
+
+       
+
+
+
+        // // 输出结果
+        // console.log("Transaction result:", result);
+        // // this.form.block_address = result.blockHash;
+        // // this.form.paper_transaction_address = result.transactionHash;
+
+        // ElMessage({
+        //         type: 'success',
+        //         message: '《'+fileName+ '》' + '文件信息已上链',
+        // })
+        // console.log(md5)
+        // console.log(fileHash)
+        // updateFileInfo({
+        //     md5Hash: md5,
+        //     cid: cid,
+        //     transactionHash: result.transactionHash
+        // }).then(res => {
+        //     console.log(res)
+        // })
+
+      } catch (error) {
+        // fileList = [];
+        // $message({
+        //   message: "Upload to blockchain failed",
+        //   type: "error",
+        // });
+        // // 处理错误
+        // console.error("Error:", error);
+      }
+    }
+
+
 </script>
 <style lang="scss" scoped>
 .body-area{

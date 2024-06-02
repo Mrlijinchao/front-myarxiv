@@ -2,6 +2,7 @@
     <div>
         <el-row style="background-color: black;" class="row-bg" justify="space-between">
                         <el-col style="background-color: black;" class="logo-col" :span="7">
+                          <!-- <img @click="gotoFacade()" src="../../../../../../public/images/myarxiv logo(1).svg" class="logo"/> -->
                             <img src="../../../../../../public/images/mypaper.png.svg" class="logo"/>
                         </el-col>
                         <el-col style="background-color: black;" :span="4">
@@ -14,7 +15,14 @@
     </div>
 </template>
 <script setup>
+import {useRouter} from "vue-router";
+let router = useRouter();
 
+function gotoFacade(){
+    router.push({
+        path:"/facade/home",
+    })
+}
 </script>
 <style setup>
 /* 顶栏样式 */

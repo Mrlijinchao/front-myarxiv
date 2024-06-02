@@ -3,7 +3,7 @@
 
     <el-col :xs="8" :sm="6" :md="4" :lg="3" :xl="1" class="logo-col">
         <!-- <img src="../../../../public/img/icons/arxiv-logo-one-color-white.svg" class="logo"/> -->
-        <logo class="logo"></logo>
+        <logo @click="gotoFacade()" class="logo"></logo>
     </el-col>
     <el-col class="back-home" :xs="4" :sm="6" :md="2" :lg="2" :xl="11">
         <el-icon><ArrowLeftBold /></el-icon>
@@ -33,6 +33,14 @@ import StepBar from '@/views/Submission/components/StepBar.vue'
 let store = useStore();
 
 let active = ref(0)
+import {useRouter} from "vue-router";
+let router = useRouter();
+
+function gotoFacade(){
+    router.push({
+        path:"/facade/home",
+    })
+}
 // const getStepActive = computed(()=>{
 // 	//返回的是ref对象
 // 	return store.state.stepController.stepActive

@@ -256,10 +256,15 @@ let subjectCategoryList = ref([]);
 
 onMounted(() => {
   // 清除第二步的缓存数据
-  store.dispatch('index/resetAllData')
+    store.dispatch('index/resetAllData')
     localStorage.removeItem('secondReturnInfo')
     getUserInfo();
     getLicenseInfo();
+
+    if(route.query.new == 'new'){
+      return;
+    }
+
     // 如果是新建一个submission路由里面就不会携带参数，如果是某个已经存在的submission跳转过来，就会携带submissionId
     if(route.query.submissionId == undefined || route.query.submissionId == null){
       submissionId.value = store.getters['submission/getSubmissionInfo'].id
@@ -427,7 +432,7 @@ function transformSubjectToOptions(subjectCategory,id,name){
 
 function sendGuaranteeEmail() {
   ElMessageBox.confirm(
-    '您需要有一个担保人担保之后才能继续提交！点击发送，我们会给您发送一封担保邮件。',
+    '您需要有一个有资历的人帮您背书之后才能继续提交！点击发送，我们会给您发送一封背书邮件。',
     'Warning',
     {
       confirmButtonText: '发送',
@@ -446,7 +451,7 @@ function sendGuaranteeEmail() {
       // let guaranteeEmailContent = "<!DOCTYPE html><HTML><HEAD><META  charset=\" gbk\"><TITLE>"+emailTitle+"</TITLE></HEAD><BODY>("+userInfo.name+" should forward this email to someone who's registered as an endorser for the cs.ET (Emerging Technologies) subject class of arXiv.)"+ userInfo.name+" requests your endorsement to submit an article to thecs.ET section of arXiv. To tell us that you would (or would not) like to endorse this person, please visit the following URL:http://localhost:8080/facade/endorsement?x="+str+ "and enter the following six-digit alphanumeric string:Endorsement Code: " + code.value+ "<img src=\"https://pic4.zhimg.com/v2-1b1ea64759584f6b9d90f0bfa32cb5af_r.jpg\" width=\"900\" height=\"600\" /></BODY></HTML>"
                 // console.log(str)
       
-      let emailContent   = "http://localhost:8080/facade/endorsement?x=" + str + "    Endorsement Code:" + code.value.toUpperCase()
+      let emailContent   = "http://43.139.8.186:8860/facade/endorsement?x=" + str + "    Endorsement Code:" + code.value.toUpperCase()
                 
       sendEmail({
         email: userInfo.value?.email,

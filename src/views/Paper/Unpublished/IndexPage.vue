@@ -21,9 +21,37 @@
                 <template #default="scope">
                 <el-button link type="primary" size="small" @click="updateSubmission(scope.row.id)">Update</el-button>
                 <el-button @click="deleteSubmission(scope.row.id)" link type="primary" size="small">Delete</el-button>
+
+
+                <el-popover trigger="click" placement="top" :width="300">
+                <div style="text-align: left; margin: 0">
+                 <template v-for="(item,i) in fileList" :key="i">
+                            <div class="tran-sty">
+                                <div><b>Name：</b>{{ item.name }}</div>
+                                <div><b>transactionHash：</b>{{ item.hash }}</div>
+                            </div>
+                        </template>
+                </div>
+                <template #reference>
+                    <el-button link type="primary" @click="lookFile(scope.row.id)">transactionHash</el-button>
+                </template>
+                </el-popover>
+                
                 </template>
                 </el-table-column>
                 </el-table>
+
+                <!-- <div>
+                    
+                        <template v-for="(item,i) in fileList" :key="i">
+                            <div>
+                                <span>{{ item.name + "：" }}</span>
+                                <span>{{ item.hash }}</span>
+                            </div>
+                        </template>
+                    
+                </div> -->
+
                 </div>
                 
             </div>
@@ -46,6 +74,22 @@
                 <el-button link type="primary" size="small" @click="updateSubmission(scope.row.id)">Update</el-button>
                 <!-- <el-button link type="primary" size="small">Delete</el-button> -->
                 <el-button @click="unSubmitPaper(scope.row.id)" link type="primary" size="small">UnSubmit</el-button>
+
+                <el-popover trigger="click" placement="top" :width="300">
+                <div style="text-align: left; margin: 0">
+                 <template v-for="(item,i) in fileList" :key="i">
+                            <div class="tran-sty">
+                                <div><b>Name：</b>{{ item.name }}</div>
+                                <div><b>transactionHash：</b>{{ item.hash }}</div>
+                            </div>
+                        </template>
+                </div>
+                <template #reference>
+                    <el-button link type="primary" @click="lookFile(scope.row.id)">transactionHash</el-button>
+                </template>
+                </el-popover>
+                
+
              </template>
                  </el-table-column>
             </el-table>
@@ -63,9 +107,11 @@ import {useRouter} from "vue-router";
 import { queryUnpublished,removeSubmission,unSubmit } from "@/api/paper/paper"
 import moment from 'moment'
 import { ElMessage,ElMessageBox} from 'element-plus'
+import { getFileBySubmission } from '@/api/paper/paper'
 
 let router = useRouter();
 let store = useStore();
+
 
 const handleClick = () => {
   console.log('click')
@@ -82,10 +128,24 @@ onMounted(() => {
     getUnpublished()
 })
 
+const fileList = ref();
+// 查询文件列表
+function lookFile(id){
+    getFileBySubmission({submissionId: id}).then((res) => {
+        if(res.code == 200){
+          fileList.value = res.data  
+        } 
+        console.log('结束')
+    })
+}
+
 // 创建一个论文
 function createSubmission(){
     router.push({
-              path:"/submission/first"
+              path:"/submission/first",
+              query: {
+                new:'new'
+              }
           })
 }
 
@@ -170,6 +230,12 @@ function unSubmitPaper(id){
 .submission-btn{
     width: 20%;
     text-align: center;
+}
+.tran-sty{
+    margin-top: 3px;
+    border: 1px solid rgb(147, 143, 143);
+    padding: 2px;
+    border-radius: 2px;
 }
 /* .submission-box{
 

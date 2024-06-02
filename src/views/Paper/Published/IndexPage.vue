@@ -16,8 +16,23 @@
                 <el-table-column fixed="right" label="Actions" width="300">
             <template #default="scope">
                 <el-button link type="primary" size="small" @click="gotoUpdateVersion(scope.row.id)">UpdateVersion</el-button>
-                <el-button link type="primary" size="small" @click="">Withdraw</el-button>
-                <el-button link type="primary" size="small" @click="">Cross list</el-button>
+                <!-- <el-button link type="primary" size="small" @click="">Withdraw</el-button>
+                <el-button link type="primary" size="small" @click="">Cross list</el-button> -->
+
+                <el-popover trigger="click" placement="top" :width="300">
+                <div style="text-align: left; margin: 0">
+                 <template v-for="(item,i) in fileList" :key="i">
+                            <div class="tran-sty">
+                                <div><b>Name：</b>{{ item.name }}</div>
+                                <div><b>transactionHash：</b>{{ item.hash }}</div>
+                            </div>
+                        </template>
+                </div>
+                <template #reference>
+                    <el-button link type="primary" @click="lookFile(scope.row.id)">transactionHash</el-button>
+                </template>
+                </el-popover>
+
              </template>
                  </el-table-column>
             </el-table>
@@ -28,17 +43,29 @@
 import {onMounted, ref} from 'vue'
 import { useStore } from "vuex";
 import {useRouter} from "vue-router";
-import { queryPublished} from "@/api/paper/paper"
+import { queryPublished,getFileByPaperId} from "@/api/paper/paper"
 let router = useRouter();
 let store = useStore();
 
 let paperList = ref([]);
 const userId = ref()
 
+const fileList = ref()
+
 onMounted(() => {
     userId.value = JSON.parse(localStorage.getItem('user'))?.id
     getPublished()
 })
+
+// 查询文件列表
+function lookFile(id){
+    getFileByPaperId({paperId: id}).then((res) => {
+        if(res.code == 200){
+          fileList.value = res.data  
+        } 
+        console.log('结束')
+    })
+}
 
 function getPublished(){
     queryPublished({userId: userId.value}).then((res) => {
@@ -83,7 +110,11 @@ function gotoUpdateVersion(id){
     width: 20%;
     text-align: center;
 }
-/* .submission-box{
 
-} */
+.tran-sty{
+    margin-top: 3px;
+    border: 1px solid rgb(147, 143, 143);
+    padding: 2px;
+    border-radius: 2px;
+}
 </style>

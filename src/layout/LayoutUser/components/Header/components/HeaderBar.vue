@@ -1,7 +1,7 @@
 <template>
     <el-row>
         <el-col :xs="8" :sm="6" :md="4" :lg="3" :xl="1" class="logo-col">
-                            <img src="../../../../../../public/images/myarxiv logo.png.svg" class="logo"/>
+                            <img @click="gotoFacade()" src="../../../../../../public/images/myarxiv logo(1).svg" class="logo"/>
                         </el-col>
                         <el-col :xs="4" :sm="6" :md="8" :lg="9" :xl="11">
                           <MenuBar></MenuBar>
@@ -20,7 +20,14 @@ import MenuBar from '@/views/User/components/MenuBar.vue'
 import UserHandle from '@/views/User/components/UserHandle.vue'
 const input3 = ref('')
 const select = ref('')
+import {useRouter} from "vue-router";
+let router = useRouter();
 
+function gotoFacade(){
+    router.push({
+        path:"/facade/home",
+    })
+}
 </script>
 <style scoped>
 /* 顶栏样式 */

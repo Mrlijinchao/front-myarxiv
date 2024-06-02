@@ -151,10 +151,13 @@
 <script setup>
 import { reactive,onMounted,ref } from 'vue'
 import { queryPaperInfoById,getFileByPaperId,updateVersion } from "@/api/paper/paper"
-import { useRoute } from 'vue-router'
+import { useRoute,useRouter } from 'vue-router'
 import { downloadFile,deleteFile } from '@/api/file/file'
-import { saveFiles } from '@/api/file/file'
-import { ElMessage} from 'element-plus'
+import { saveFiles,updateFileInfo  } from '@/api/file/file'
+import { ElMessage,ElMessageBox} from 'element-plus'
+import {queryCurrentUser} from '@/api/user/user'
+
+const router = useRouter()
 const route = useRoute()
 
 const paperId = ref()
@@ -178,11 +181,15 @@ const paper = reactive({
     mscClass: null
 })
 
+const userInfo = ref()
 onMounted(() => {
     if(route.query.paperId != undefined && route.query.paperId != null){
         paperId.value = route.query.paperId;
     }
     getPaperInfo()
+    queryCurrentUser().then((res) => {
+        userInfo.value = res.data;
+    })
 })
 
 function getPaperInfo(){
@@ -232,8 +239,8 @@ function btnClick(cid,fileName){
 function removeFile(id){
     deleteFile({id: id}).then((res) => {
         if(res.code == 200){
-            // getPaperInfo()
-            queryFileByPaper()
+            getPaperInfo()
+            // queryFileByPaper()
             ElMessage({
                 type: 'success',
                 message: '删除成功',
@@ -259,6 +266,8 @@ function handleChange(file, fileList) {
 function handleRemove(file, fileList) {
     fileList.value = fileList
 }
+
+let flag = ref(false)
 //上传服务器
 function submitUpload() {
     //判断是否有文件再上传
@@ -269,8 +278,10 @@ function submitUpload() {
       })
       return
     }
-
-
+    if(flag == true){
+        return;
+    }
+    flag = true;
     // 下面的代码将创建一个空的FormData对象:
     const formData = new FormData()
     // 你可以使用FormData.append来添加键/值对到表单里面；
@@ -284,15 +295,24 @@ function submitUpload() {
     //     data: formData
     // });
     saveFiles(formData).then((res) => {
-        console.log(res)
+        console.log("res",res)
+        if(res.code == 200){
 
-        // localStorage.setItem('secondReturnInfo',JSON.stringify(res));
-        ElMessage({
-        type: 'success',
-        message: '文件已上传',
-      })
+            // localStorage.setItem('secondReturnInfo',JSON.stringify(res));
+                ElMessage({
+                type: 'success',
+                message: '文件已上传',
+            })
       // 更新已上传文件列表
-      queryFileByPaper()
+            // queryFileByPaper()
+            getPaperInfo()
+            let successData = res.data['successResData']
+            console.log("successData",successData)
+            callSmartContract(successData)
+
+        }
+        
+        flag = false
     })
 }
 
@@ -373,6 +393,108 @@ const rules = reactive({
     ]
 
 })
+
+
+import { ERC20contractInstance } from "@/blockchain/constant.js";
+
+async function connectWallet() {
+      try {
+        // 检查是否存在 window.ethereum 对象
+        if (!window.ethereum) {
+          alert("Please install the MetaMask plugin to continue the operation");
+          return;
+        }
+
+        // 尝试请求用户授权
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+
+        if (accounts.length === 0) {
+          alert("请连接到以太坊网络以继续操作");
+        } else {
+          // 用户已连接，可以执行其他操作或初始化
+          console.log("用户已连接，可以执行其他操作");
+        }
+      } catch (error) {
+        // 处理错误
+        console.error("连接钱包时出错:", error);
+      }
+    }
+
+async function callSmartContract(successData) {
+      try {
+        connectWallet()
+        // 调用智能合约函数
+        const functionName = "storeHash";
+        // this.userInfo.block_chain_address =
+        //   this.userInfo.block_chain_address.toLowerCase();
+
+        // if (
+        //   this.userInfo.block_chain_address !== window.ethereum.selectedAddress
+        // ) {
+        //   this.fileList = [];
+        //   this.$message({
+        //     message: "Please use the your account_address",
+        //     type: "warning",
+        //   });
+        //   return;
+        // }
+        console.log(window.ethereum.selectedAddress)
+        // const result = await ERC20contractInstance.methods[functionName](
+
+        for(let i = 0;successData.length;i++){
+                let fileData = successData[i]
+                let hash = userInfo.value.id+ "::" + fileData['md5Hash'] +"::"+ fileData['cid']
+                console.log(fileData)
+                console.log(fileData['fileName'])
+                console.log(hash)
+
+                const functionArgs = [hash];
+
+                 await ERC20contractInstance.methods[functionName](
+          ...functionArgs
+        ).send({
+          from: window.ethereum.selectedAddress,
+          gasPrice: "0",
+        }).then(result => {
+
+        // 输出结果
+        console.log("Transaction result:", result);
+        // this.form.block_address = result.blockHash;
+        // this.form.paper_transaction_address = result.transactionHash;
+
+        ElMessage({
+                type: 'success',
+                message: '《'+fileData['fileName']+ '》' + '文件信息已上链',
+        })
+        console.log(result.transactionHash)
+        updateFileInfo({
+            md5Hash: fileData['md5Hash'],
+            cid: fileData['cid'],
+            transactionHash: result.transactionHash
+        }).then(res => {
+            console.log(res)
+        })
+
+        });
+
+            }
+
+
+
+
+      } catch (error) {
+        // fileList = [];
+        // $message({
+        //   message: "Upload to blockchain failed",
+        //   type: "error",
+        // });
+        // // 处理错误
+        // console.error("Error:", error);
+      }
+    }
+
 
 
 </script>

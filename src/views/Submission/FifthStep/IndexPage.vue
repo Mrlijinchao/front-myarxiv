@@ -338,6 +338,7 @@ function last(){
 }
 
 
+
 </script>
 <style scoped>
 .main-area{
@@ -397,6 +398,9 @@ function last(){
     flex-direction: column;
     justify-content: center;
     align-items: left;
+    border-bottom: 1px solid rgb(101, 99, 99);
+    border-radius: 2px;
+    margin-top: 2px;
 }
 .bottom-area{
     display: flex;
